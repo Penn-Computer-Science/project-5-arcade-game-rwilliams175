@@ -1,22 +1,23 @@
 import tkinter as tk
-from tkinter import font
 import random
 import time
 
+#Constants
 
 WIDTH = 640
 HEIGHT = 360
 
-PLAYER_SIZE = 30
-ENEMY_SIZE = 20
-TEXT_SIZE = 50
-BIG_SIZE = 40
-
-PLAYER_SPEED = 15
+PLAYER_SPEED = 12
 ENEMY_SPEED = 3
 BIG_SPEED = 1.5
 
-#declare variable
+ATTACK_RANGE = 50
+ATTACK_DAMAGE = 1
+
+MAX_HP = 100
+
+
+#Variables
 
 alive = True
 game_state = "start"
@@ -26,9 +27,12 @@ enemies = []
 
 wave = 1
 attack_cooldown = 0
+player_hp = MAX_HP
 
 
-#build window
+
+
+#Window
 
 root = tk.Tk()
 root.title("Colosseum")
@@ -36,15 +40,8 @@ root.title("Colosseum")
 canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg="black")
 canvas.pack()
 
+#IMGS
 
-<<<<<<< HEAD
-#start screen
-
-def show_start_screen():
-    canvas.delete("all")
-    canvas.create_text(WIDTH//2, HEIGHT//2 - 50, text="DODGER", fill="white", font=("Arial",60,"bold"))
-    canvas.create_text(WIDTH//2,HEIGHT//2+50, text= "Press SPACE to Start", fill="white",font=("Arial",30))
-=======
 player_img = tk.PhotoImage(file="hero.png.png")
 enemy_img = tk.PhotoImage(file="skeleton-small.png.png")
 big_enemy_img = tk.PhotoImage(file="skeleton-big.png.png")
@@ -64,107 +61,78 @@ def show_start_screen():
     #canvas.create_text(WIDTH//2, HEIGHT//2 - 40, text = "COLOSSEUM", fill = "white", font = ("Arial", 40, "bold"))
     #canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Attack with Left Shift", fill = "white", font = ("Arial", 20))
     canvas.create_image(0, 0, anchor="nw", image = start_img)
->>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
 
-#game over screen
-
-def show_game_over_screen():
+def show_game_over():
     canvas.delete("all")
-    canvas.create_text(WIDTH//2,HEIGHT//2-50,text="YOU DIED",fill="#5C0606",font=("Arial",60,"bold"))
-    canvas.create_text(WIDTH//2,HEIGHT//2+50,text="Press SPACE to Restart",fill="white",font=("Arial",30))
+    canvas.create_image(0, 0, anchor="nw", image = dead_img)
 
-#game start(kind og)
+
+#Start game 
 
 def start_game(event=None):
-    global alive, score, enemies, bigones, bars, warnings
-    global player, score_text, game_state, next_horizontal_time, next_vertical_time, vertical_bars, vertical_warnings
+    global alive, enemies, player, wave, game_state, player_hp
+    global wave_text, hp_bar, hp_bg
 
-    game_state = "running"
+    if game_state == "running":
+        return
+
     alive = True
-    score = 0
+    game_state = "running"
+    wave = 1
     enemies = []
-    bigones = []
-    bars = []
-    warnings = []
-    vertical_warnings = []
-    vertical_bars = []
-    
-    now = time.time() * 1000
-    next_horizontal_time = now + random.randint(1000,10000)
-    next_vertical_time = now + random.randint(1000,10000)
+    player_hp = MAX_HP
 
     canvas.delete("all")
 
-    player = create_heart(WIDTH//2, HEIGHT//2, size=25, color="#00FF37")
-    score_text = canvas.create_text(70, 30, text="0", fill="white", font=("Arial",24))
+    # background
+    canvas.create_image(0, 0, anchor="nw", image=bg_img)
+
+    # player
+    player = canvas.create_image(WIDTH//2, HEIGHT//2, image=player_img)
+
+    # UI
+    wave_text = canvas.create_text(80, 20, text=f"Wave: {wave}",
+                                   fill="white", font=("Arial", 16))
+
+    hp_bg = canvas.create_rectangle(10, 40, 210, 60, fill="gray")
+    hp_bar = canvas.create_rectangle(10, 40, 210, 60, fill="green")
+
+    spawn_wave()
     run_game()
+#Movement
 
-
-#movemenet function
 def move_left(event):
-    x1,y1,x2,y2 = canvas.bbox(player)
-    if x1>0:
-        canvas.move(player, -20, 0)
+    if game_state != "running": return
+    canvas.move(player, -PLAYER_SPEED, 0)
+
 def move_right(event):
-    x1,y1,x2,y2 = canvas.bbox(player)
-    if x2 < WIDTH:
-        canvas.move(player, 20, 0)
+    if game_state != "running": return
+    canvas.move(player, PLAYER_SPEED, 0)
+
 def move_up(event):
-    x1,y1,x2,y2 = canvas.bbox(player)
-    if y1>0:
-        canvas.move(player, 0, -20)
+    if game_state != "running": return
+    canvas.move(player, 0, -PLAYER_SPEED)
+
 def move_down(event):
-    x1,y1,x2,y2 = canvas.bbox(player)
-    if y2 < HEIGHT:
-        canvas.move(player, 0, 20)
-
-#binding buttons
-root.bind("a",move_left)
-root.bind("d",move_right)
-root.bind("w",move_up)
-root.bind("s",move_down)
-root.bind("<space>", start_game)
-#bad guys
+    if game_state != "running": return
+    canvas.move(player, 0, PLAYER_SPEED)
 
 
+#Attacks 
 
-def spawn_enemy():
-    x = random.randint(0, WIDTH-ENEMY_SIZE)
-    enemy = canvas.create_rectangle(x, 0, x+ENEMY_SIZE, ENEMY_SIZE, fill = "#FF0000")
-    enemies.append(enemy)
+def attack(event=None):
+    global attack_cooldown
 
-def spawn_bigone():
-    x = random.randint(0, WIDTH - BIGONE_SIZE)
-    enemy = canvas.create_rectangle(x, 0, x + BIGONE_SIZE, BIGONE_SIZE, fill="#8B0000")
-    bigones.append(enemy)
-    
-def trigger_horizontal_event():
-    x = random.randint(0, WIDTH - BAR_WIDTH)
-    flash_warning(x)
+    if game_state != "running": return
+    if attack_cooldown > 0:
+        return
 
-<<<<<<< HEAD
-def flash_warning(x, flashes = 6):
-    warning = canvas.create_rectangle(x, 0, x + BAR_WIDTH, 20, fill="yellow")
-    warnings.append(warning)
-=======
     attack_cooldown = 5
->>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
 
-    def animate(count):
-        if count == 0:
-            if warning in warnings:
-                canvas.delete(warning)
-                warnings.remove(warning)
-            spawn_bar(x)
-            return
-        current = canvas.itemcget(warning, "fill")
-        new = "" if current == "yellow" else "yellow"
-        canvas.itemconfig(warning, fill = new)
+    px1, py1, px2, py2 = canvas.bbox(player)
+    px = (px1 + px2) / 2
+    py = (py1 + py2) / 2
 
-<<<<<<< HEAD
-        root.after(100, lambda: animate(count-1))
-    animate(flashes)
-=======
     #Attack visual
     circle = canvas.create_oval(
         px - ATTACK_RANGE, py - ATTACK_RANGE,
@@ -172,127 +140,138 @@ def flash_warning(x, flashes = 6):
         outline="yellow", width=5
     )
     root.after(100, lambda: canvas.delete(circle))
->>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
-
-def spawn_bar(x):
-    bar = canvas.create_rectangle(x, 0, x + BAR_WIDTH, 40, fill="#AA0000")
-    bars.append(bar)
-
-def trigger_vertical_event():
-    count = random.randint(2,3)
-    positions = []
-    
-    while len(positions) < count:
-        x = random.randint(0, WIDTH - 40)
-
-        if all(abs(x-p) > 150 for p in positions):
-            positions.append(x)
-    for x in positions:
-        flash_vertical_warning(x)
-def flash_vertical_warning(x, flashes=6):
-    warning = canvas.create_rectangle(x, 0, x + 20, 40, fill="cyan")
-    vertical_warnings.append(warning)
-    def animate(count):
-        if count == 0:
-            if warning in vertical_warnings:
-                canvas.delete(warning)
-                vertical_warnings.remove(warning)
-            spawn_vertical_bar(x)
-            return
-        current = canvas.itemcget(warning,"fill")
-        new = "" if current == "cyan" else "cyan"
-        canvas.itemconfig(warning, fill=new)
-
-        root.after(100, lambda: animate(count-1))
-    animate(flashes)
-def spawn_vertical_bar(x):
-    bar = canvas.create_rectangle(x, 0, x + 40, HEIGHT, fill = "#00A2FF")
-    vertical_bars.append(bar)
-
-    root.after(1000, lambda: remove_vertical_bar(bar))
-def remove_vertical_bar(bar):
-    if bar in vertical_bars:
-        canvas.delete(bar)
-        vertical_bars.remove(bar)
-
-#run game
-def run_game():
-    global alive, score, game_state, next_horizontal_time, next_vertical_time
-    if game_state != "running":
-        return
-    if not alive:
-        game_state = "game over"
-        show_game_over_screen()
-        return
-        
-    now = time.time() * 1000
-    if now >= next_horizontal_time:
-        trigger_horizontal_event()
-        next_horizontal_time = now + random.randint(1000,10000)
-    if now >= next_vertical_time:
-        trigger_vertical_event()
-        next_vertical_time = now + random.randint(1000,10000)
-    if random.randint(1,5)==1:
-        spawn_enemy()
-    if random.randint(1,120)==1:
-        spawn_bigone()
 
     for enemy in enemies[:]:
-        canvas.move(enemy, 0, 10)
-        ex1,ey1,ex2,ey2 = canvas.bbox(enemy)
+        ex1, ey1, ex2, ey2 = canvas.bbox(enemy["id"])
+        ex = (ex1 + ex2) / 2
+        ey = (ey1 + ey2) / 2
 
-        if ey2 > HEIGHT:
-            score += 1
-            canvas.itemconfig(score_text,text=f"{score}")
-            canvas.delete(enemy)
-            enemies.remove(enemy)
-            continue
-        if canvas.bbox(enemy) and canvas.bbox(player):
-            px1,py1,px2,py2 = canvas.bbox(player)
+        dist = ((px - ex)**2 + (py - ey)**2)**0.5
+
+        if dist < ATTACK_RANGE:
+            enemy["hp"] -= ATTACK_DAMAGE
+
+            if enemy["hp"] <= 0:
+                canvas.delete(enemy["id"])
+                enemies.remove(enemy)
+
+#Enemies
+
+def spawn_enemy(type="small"):
+    if type == "small":
+        speed = ENEMY_SPEED
+        hp = 1
+        sprite = enemy_img
+    else:
+        speed = BIG_SPEED
+        hp = 5
+        sprite = big_enemy_img
+
+    x = random.randint(0, WIDTH)
+    y = random.randint(0, HEIGHT)
+
+    enemy_id = canvas.create_image(x, y, image=sprite)
+
+    enemies.append({
+        "id": enemy_id,
+        "speed": speed,
+        "hp": hp,
+        "sprite": sprite
+    })
+
+#Wave
+
+def spawn_wave():
+    global wave
+
+    for _ in range(wave * 3):
+        spawn_enemy("small")
+
+    for _ in range(max(0, wave // 3)):
+        spawn_enemy("big")
+
+    canvas.itemconfig(wave_text, text=f"Wave: {wave}")
+#Enemy Movement
+
+def move_enemies():
+    for enemy in enemies:
+        ex1, ey1, ex2, ey2 = canvas.bbox(enemy["id"])
+        px1, py1, px2, py2 = canvas.bbox(player)
+
+        ex = (ex1 + ex2) / 2
+        ey = (ey1 + ey2) / 2
+        px = (px1 + px2) / 2
+        py = (py1 + py2) / 2
+
+        dx = px - ex
+        dy = py - ey
+
+        dist = max((dx**2 + dy**2)**0.5, 0.001)
+
+        canvas.move(
+            enemy["id"],
+            (dx / dist) * enemy["speed"],
+            (dy / dist) * enemy["speed"]
+        )
+
+#Collision
+
+def check_collisions():
+    global player_hp, alive
+
+    for enemy in enemies:
+        if canvas.bbox(enemy["id"]) and canvas.bbox(player):
+            ex1, ey1, ex2, ey2 = canvas.bbox(enemy["id"])
+            px1, py1, px2, py2 = canvas.bbox(player)
 
             if ex1 < px2 and ex2 > px1 and ey1 < py2 and ey2 > py1:
-                alive = False
-    
-    for enemy in bigones[:]:
-        canvas.move(enemy, 0, 7)
-        ex1, ey1, ex2, ey2 = canvas.bbox(enemy)
+                player_hp -= 1
 
-        if ey2 > HEIGHT:
-            score += 5
-            canvas.itemconfig(score_text, text=f"{score}")
-            canvas.delete(enemy)
-            bigones.remove(enemy)
-            continue
+    if player_hp <= 0:
+        alive = False
 
-        if canvas.bbox(enemy) and canvas.bbox(player):
-            px1,py1,px2,py2 = canvas.bbox(player)
+#HP Bar
 
-            if ex1 < px2 and ex2 > px1 and ey1 < py2 and ey2 > py1:
-                alive = False
+def update_hp_bar():
+    ratio = player_hp / MAX_HP
+    canvas.coords(hp_bar, 10, 40, 10 + 200 * ratio, 60)
 
-    for bar in bars[:]:
-        canvas.move(bar, 0, BAR_SPEED)
-        bx1, by1, bx2, by2 = canvas.bbox(bar)
-        if by2 > HEIGHT:
-            canvas.delete(bar)
-            bars.remove(bar)
-            continue
+#Game loop
 
-        px1, py1, px2, py2 = canvas.bbox(player)
-        if bx1 < px2 and bx2 > px1 and by1 < py2 and by2 > py1:
-            alive = False
-    
-    for bar in vertical_bars[:]:
-        bx1, by1, bx2, by2 = canvas.bbox(bar)
-        px1, py1, px2, py2 = canvas.bbox(player)
-        if bx1 < px2 and bx2 > px1 and by1 < py2 and by2 > py1:
-            alive = False
+def run_game():
+    global alive, game_state, wave, attack_cooldown
 
-        
+    if game_state != "running":
+        return
+
+    if not alive:
+        game_state = "game over"
+        show_game_over()
+        return
+
+    move_enemies()
+    check_collisions()
+    update_hp_bar()
+
+    if attack_cooldown > 0:
+        attack_cooldown -= 1
+
+    if len(enemies) == 0:
+        wave += 1
+        spawn_wave()
 
     root.after(40, run_game)
 
+#Binds
 
-#main loop
+root.bind("a", move_left)
+root.bind("d", move_right)
+root.bind("w", move_up)
+root.bind("s", move_down)
+root.bind("<space>", start_game)
+root.bind("<Shift_L>", attack)
+
+#Actually Start
+
 show_start_screen()
 root.mainloop()
