@@ -37,12 +37,34 @@ canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg="black")
 canvas.pack()
 
 
+<<<<<<< HEAD
 #start screen
 
 def show_start_screen():
     canvas.delete("all")
     canvas.create_text(WIDTH//2, HEIGHT//2 - 50, text="DODGER", fill="white", font=("Arial",60,"bold"))
     canvas.create_text(WIDTH//2,HEIGHT//2+50, text= "Press SPACE to Start", fill="white",font=("Arial",30))
+=======
+player_img = tk.PhotoImage(file="hero.png.png")
+enemy_img = tk.PhotoImage(file="skeleton-small.png.png")
+big_enemy_img = tk.PhotoImage(file="skeleton-big.png.png")
+
+bg_img = tk.PhotoImage(file="bg.png")
+start_img = tk.PhotoImage(file="Start1.png")
+dead_img = tk.PhotoImage(file="Sprite-0001.png")
+
+#UI
+
+wave_text = None
+hp_bar = None
+hp_bg = None
+
+def show_start_screen():
+    canvas.delete("all")
+    #canvas.create_text(WIDTH//2, HEIGHT//2 - 40, text = "COLOSSEUM", fill = "white", font = ("Arial", 40, "bold"))
+    #canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Attack with Left Shift", fill = "white", font = ("Arial", 20))
+    canvas.create_image(0, 0, anchor="nw", image = start_img)
+>>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
 
 #game over screen
 
@@ -120,9 +142,13 @@ def trigger_horizontal_event():
     x = random.randint(0, WIDTH - BAR_WIDTH)
     flash_warning(x)
 
+<<<<<<< HEAD
 def flash_warning(x, flashes = 6):
     warning = canvas.create_rectangle(x, 0, x + BAR_WIDTH, 20, fill="yellow")
     warnings.append(warning)
+=======
+    attack_cooldown = 5
+>>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
 
     def animate(count):
         if count == 0:
@@ -135,8 +161,18 @@ def flash_warning(x, flashes = 6):
         new = "" if current == "yellow" else "yellow"
         canvas.itemconfig(warning, fill = new)
 
+<<<<<<< HEAD
         root.after(100, lambda: animate(count-1))
     animate(flashes)
+=======
+    #Attack visual
+    circle = canvas.create_oval(
+        px - ATTACK_RANGE, py - ATTACK_RANGE,
+        px + ATTACK_RANGE, py + ATTACK_RANGE,
+        outline="yellow", width=5
+    )
+    root.after(100, lambda: canvas.delete(circle))
+>>>>>>> ddfd54d9b1a85b281a453f2a92815dd670efb896
 
 def spawn_bar(x):
     bar = canvas.create_rectangle(x, 0, x + BAR_WIDTH, 40, fill="#AA0000")
