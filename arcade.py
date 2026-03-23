@@ -59,7 +59,7 @@ hp_bg = None
 def show_start_screen():
     canvas.delete("all")
     #canvas.create_text(WIDTH//2, HEIGHT//2 - 40, text = "COLOSSEUM", fill = "white", font = ("Arial", 40, "bold"))
-    canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Attack with Left Shift", fill = "white", font = ("Arial", 20))
+    #canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Attack with Left Shift", fill = "white", font = ("Arial", 20))
     canvas.create_image(0, 0, anchor="nw", image = start_img)
 
 def show_game_over():
