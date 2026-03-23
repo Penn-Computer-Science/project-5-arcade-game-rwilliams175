@@ -42,9 +42,9 @@ canvas.pack()
 
 #IMGS
 
-player_img = tk.PhotoImage(file="player.png")
-enemy_img = tk.PhotoImage(file="enemy.png")
-big_enemy_img = tk.PhotoImage(file="big_enemy.png")
+player_img = tk.PhotoImage(file="hero.png.png")
+enemy_img = tk.PhotoImage(file="skeleton-small.png.png")
+big_enemy_img = tk.PhotoImage(file="skeleton-big.png.png")
 
 bg_img = tk.PhotoImage(file="bg.png")
 start_img = tk.PhotoImage(file="Start1.png")
@@ -59,7 +59,7 @@ hp_bg = None
 def show_start_screen():
     canvas.delete("all")
     #canvas.create_text(WIDTH//2, HEIGHT//2 - 40, text = "COLOSSEUM", fill = "white", font = ("Arial", 40, "bold"))
-    #canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Press Space to Start", fill = "white", font = ("Arial", 20))
+    canvas.create_text(WIDTH/2, HEIGHT/2 + 40, text = "Attack with Left Shift", fill = "white", font = ("Arial", 20))
     canvas.create_image(0, 0, anchor="nw", image = start_img)
 
 def show_game_over():
@@ -127,7 +127,7 @@ def attack(event=None):
     if attack_cooldown > 0:
         return
 
-    attack_cooldown = 10
+    attack_cooldown = 5
 
     px1, py1, px2, py2 = canvas.bbox(player)
     px = (px1 + px2) / 2
@@ -137,7 +137,7 @@ def attack(event=None):
     circle = canvas.create_oval(
         px - ATTACK_RANGE, py - ATTACK_RANGE,
         px + ATTACK_RANGE, py + ATTACK_RANGE,
-        outline="yellow", width=2
+        outline="yellow", width=5
     )
     root.after(100, lambda: canvas.delete(circle))
 
